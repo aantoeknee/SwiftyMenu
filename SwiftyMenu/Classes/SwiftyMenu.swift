@@ -127,6 +127,9 @@ public class SwiftyMenu: UIView {
     
     /// Determine Menu row background color
     @IBInspectable public var rowBackgroundColor: UIColor = .white
+  
+    ///
+    @IBInspectable public var rowTextSize: CGFloat = 18.0
     
     /// Determine Menu selected row background color
     @IBInspectable public var selectedRowColor: UIColor?
@@ -269,7 +272,7 @@ public class SwiftyMenu: UIView {
             selectButton.layoutIfNeeded()
         }
         selectButton.titleLabel?.lineBreakMode = .byTruncatingTail
-        selectButton.titleLabel?.font = UIFont.systemFont(ofSize: 12)
+        selectButton.titleLabel?.font = UIFont(name: "Gill Sans", size: rowTextSize)
         selectButton.imageEdgeInsets.left = width - 16
         selectButton.titleEdgeInsets.right = 16
         selectButton.backgroundColor = menuHeaderBackgroundColor
@@ -333,9 +336,12 @@ extension SwiftyMenu: UITableViewDataSource {
 
         if isMultiSelect {
             let cell = tableView.dequeueReusableCell(withIdentifier: "OptionCell", for: indexPath)
-            cell.textLabel?.text = options[indexPath.row].displayableValue
+            cell.textLabel?.text = options[indexPath.item].displayableValue
             cell.textLabel?.textColor = optionColor
-            cell.textLabel?.font = UIFont.systemFont(ofSize: 12)
+            cell.textLabel?.numberOfLines = 0
+            cell.textLabel?.lineBreakMode = .byWordWrapping
+            cell.textLabel?.textAlignment = .left
+            cell.textLabel?.font = UIFont(name: "Gill Sans", size: rowTextSize)
             cell.tintColor = optionColor
             cell.backgroundColor = rowBackgroundColor
             cell.accessoryType = selectedIndecis[indexPath.row] != nil ? .checkmark : .none
@@ -343,9 +349,12 @@ extension SwiftyMenu: UITableViewDataSource {
             return cell
         } else {
             let cell = tableView.dequeueReusableCell(withIdentifier: "OptionCell", for: indexPath)
-            cell.textLabel?.text = options[indexPath.row].displayableValue
+            cell.textLabel?.text = options[indexPath.item].displayableValue
             cell.textLabel?.textColor = optionColor
-            cell.textLabel?.font = UIFont.systemFont(ofSize: 12)
+            cell.textLabel?.numberOfLines = 0
+            cell.textLabel?.lineBreakMode = .byWordWrapping
+            cell.textLabel?.textAlignment = .left
+            cell.textLabel?.font = UIFont(name: "Gill Sans", size: rowTextSize)
             cell.tintColor = optionColor
             cell.backgroundColor = rowBackgroundColor
             cell.accessoryType = indexPath.row == selectedIndex ? .checkmark : .none
@@ -359,7 +368,7 @@ extension SwiftyMenu: UITableViewDataSource {
 
 extension SwiftyMenu: UITableViewDelegate {
     public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return CGFloat(rowHeight)
+        return UITableView.automaticDimension
     }
     
     fileprivate func setMultiSelectedOptions() {
