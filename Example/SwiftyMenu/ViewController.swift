@@ -51,6 +51,7 @@ class ViewController: UIViewController {
         dropDown.borderColor = .black
         dropDown.optionColor = .red
         dropDown.placeHolderColor = .blue
+        dropDown.placeholderTextSize = 5.0
         dropDown.rowTextSize = 18.0
         dropDown.menuHeaderBackgroundColor = .lightGray
         dropDown.rowBackgroundColor = .orange

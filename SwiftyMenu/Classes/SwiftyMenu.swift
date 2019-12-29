@@ -272,7 +272,7 @@ public class SwiftyMenu: UIView {
             selectButton.layoutIfNeeded()
         }
         selectButton.titleLabel?.lineBreakMode = .byTruncatingTail
-        selectButton.titleLabel?.font = UIFont(name: "Gill Sans", size: rowTextSize)
+        selectButton.titleLabel?.font = UIFont(name: "Gill Sans", size: rowTextSize - 2)
         selectButton.imageEdgeInsets.left = width - 16
         selectButton.titleEdgeInsets.right = 16
         selectButton.backgroundColor = menuHeaderBackgroundColor
