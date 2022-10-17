@@ -1,7 +1,7 @@
 //
-//  SwiftMenuDisplayable.swift
+//  SwiftyMenuAttributes+AnimationTiming.swift
 //
-//  Copyright (c) 2019-2020 Karim Ebrahem (https://twitter.com/k_ebrahem_)
+//  Copyright (c) 2019-2021 Karim Ebrahem (https://twitter.com/k_ebrahem_)
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -24,11 +24,22 @@
 
 import Foundation
 
-/// `SwiftyMenuDisplayable` is the markable interface to allow custom types to be used with SwiftyMenu.
-public protocol SwiftyMenuDisplayable {
-    /// The value that will be displayed in the menu item
-    var displayableValue: String { get }
-    
-    /// The value that will be returned when select menu item
-    var retrievableValue: Any { get }
+public extension SwiftyMenuAttributes {
+
+    /** Describes how long the menu animates */
+    enum AnimationTiming {
+
+        case `default`
+
+        case value(duration: Double, delay: Double)
+
+        var animationTimingValues: (duration: Double, delay: Double) {
+            switch self {
+            case let .value(duration, delay):
+                return (duration: duration, delay: delay)
+            case .default:
+                return (duration: 0.5, delay: 0.0)
+            }
+        }
+    }
 }

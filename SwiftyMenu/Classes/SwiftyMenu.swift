@@ -1,128 +1,118 @@
 //
 //  SwiftyMenu.swift
-//  SwiftyMenu
 //
-//  Created by Karim Ebrahem on 4/17/19.
-//  Copyright © 2019 Karim Ebrahem. All rights reserved.
+//  Copyright (c) 2019-2020 Karim Ebrahem (https://twitter.com/k_ebrahem_)
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to deal
+//  in the Software without restriction, including without limitation the rights
+//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//  copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+//  THE SOFTWARE.
 //
 
 import Foundation
 import UIKit
 import SnapKit
 
-/// Selection is a wrapper alias around 3 parameters
-/**
- Selection is a wrapper alias around 3 parameters
- 
- ## Parameters ##
- 1. Object of SwiftyMenu where the selection occured.
- 2. Model on which the interaction was made with.
- 3. Index of the menu item selected.
- */
-public typealias Selection = (menu: SwiftyMenu, value: SwiftyMenuDisplayable, index: Int)
-
-public class SwiftyMenu: UIView {
+/// `SwiftyMenu` is the menu class that provides common state, delegate, and callbacks handling.
+final public class SwiftyMenu: UIView {
     
-    // MARK: - Properties
+    // MARK: - IBOutlets
     
-    @IBOutlet weak var heightConstraint: NSLayoutConstraint!
+    @IBOutlet public var heightConstraint: NSLayoutConstraint!
     
-    private var selectButton: UIButton!
-    private var optionsTableView: UITableView!
-    private var state: MenuState = .hidden
-    private enum MenuState {
-        case shown
-        case hidden
-    }
-    private var width: CGFloat!
-    private var height: CGFloat!
+    // MARK: - Public Properties
     
-    /// defines Animation Style for the drop down animation
-    ///
-    /// - linear: smooth animation
-    /// - spring: bouncy animation
-    public enum AnimationStyle {
-        case linear
-        case spring(level: SpringPowerLevel)
-        
-        /// defines how bouncy the animation should be
-        ///
-        /// - low: a bit of smooth and a bit of bounciness at the end
-        /// - normal: not too bouncy and not too smooth
-        /// - high: too bouncy
-        public enum SpringPowerLevel: Double {
-            case low = 0.75
-            case normal = 1.0
-            case high = 1.5
-        }
-    }
-    
+    /// `selectedIndex` is a property to get and set selected item in `SwiftyMenu` when it is a Single Selection.
     public var selectedIndex: Int? {
         didSet {
-            setSingleSelectedOption()
+            if selectedIndex == nil {
+                setPlaceholder()
+            } else {
+                setSingleSelectedOption()
+            }
         }
     }
+    
+    /// `selectedIndecis` is a property to get and set selected item in `SwiftyMenu` when it is a Multi Selection.
     public var selectedIndecis: [Int: Int] = [:] {
         didSet {
             setMultiSelectedOptions()
         }
     }
-    public var options = [SwiftyMenuDisplayable]() {
+    
+    /// `items` is the `SwiftyMenu` DataSource.
+    ///
+    /// The items that will appear in the `SwiftyMenu`.
+    public var items = [SwiftyMenuDisplayable]() {
         didSet {
-            self.optionsTableView.reloadData()
+            self.itemsTableView.reloadData()
         }
     }
-    public weak var delegate: SwiftyMenuDelegate?
     
-    /// Callback triggered after the menu was expanded
+    /// `delegate` is the `SwiftyMenu` delegate property.
+    public weak var delegate: SwiftyMenuDelegate?
+
+    /// `separatorCharacters` is a property to get and set separator characters  in `SwiftyMenu` when it is a Multi Selection.
+    public var separatorCharacters: String?
+    
+    // MARK: - Public Callbacks
+    
+    /// `willExpand` is a completion closure that will be executed when `SwiftyMenu` is going to expand.
+    public var willExpand: (() -> Void) = { }
+    
+    /// `didExpand` is a completion closure that will be executed once `SwiftyMenu` expanded.
     public var didExpand: (() -> Void) = { }
     
-    /// Callback triggered after the menu was collapsed
-    public var didCollapse: (() -> Void) = { }
-    
-    /// Callback triggered when the menu will expand
-    public var willExpand: (() -> Void) = { }
-
-    /// Callback triggered when the menu will collapse
+    /// `willCollapse` is a completion closure that will be executed when `SwiftyMenu` is going to collapse.
     public var willCollapse: (() -> Void) = { }
     
-    /// triggered after selecting an option from the menu where Selection is an alias
-    /// which wraps on
-    /// swiftyMenu: Object of the SwiftyMeny on which the interaction was made
-    /// selectedOption: the model of the cell object which was selected
-    /// index: the index of the model which was selected
-    public var didSelectOption: ((Selection) -> Void) = { _ in }
+    /// `didCollapse` is a completion closure that will be executed once `SwiftyMenu` collapsed.
+    public var didCollapse: (() -> Void) = { }
+    
+    /// `didSelectItem` is a completion closure that will be executed when select an item from `SwiftyMenu`.
+    /// - Parameters:
+    ///   - swiftyMenu: The `SwiftyMenu` that was selected from it's items.
+    ///   - item: The `Item` that had been selected from `SwiftyMenu`.
+    ///   - index: The `Index` of the selected `Item`.
+    public var didSelectItem: ((_ swiftyMenu: SwiftyMenu,_ item: SwiftyMenuDisplayable,_ index: Int) -> Void) = { _, _, _ in }
 
-    private var updateHeightConstraint: () -> () = { }
-    private var didSelectCompletion: (SwiftyMenuDisplayable, Int) -> () = { selectedText, index in }
-    private var TableWillAppearCompletion: () -> () = { }
-    private var TableDidAppearCompletion: () -> () = { }
-    private var TableWillDisappearCompletion: () -> () = { }
-    private var TableDidDisappearCompletion: () -> () = { }
-
-    // MARK: - IBInspectable
+    // MARK: - Private Properties
     
-    /// Determine if Menu is multi selection or single selection
-    @IBInspectable public var isMultiSelect: Bool = false
+    private var selectButton: UIButton!
+    private var itemsTableView: UITableView!
+    private var state: SwiftyMenuState = .hidden
+    private var width: CGFloat!
+    private var height: CGFloat!
+    private var setuped: Bool = false
+    private var attributes: SwiftyMenuAttributes!
     
-    /// Determine if Menu will hide after selection or not
-    @IBInspectable public var hideOptionsWhenSelect: Bool = false
+    // MARK: - Init
     
-    /// Determine if Menu will scroll or not
-    @IBInspectable public var scrollingEnabled: Bool = true {
-        didSet {
-            optionsTableView.isScrollEnabled = scrollingEnabled
-        }
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        selectButton = UIButton(frame: self.frame)
+        itemsTableView = UITableView()
     }
     
-    /// Determine Menu row height
-    @IBInspectable public var rowHeight: Double = 35
-    
-    /// Determine Menu header background color
-    @IBInspectable public var menuHeaderBackgroundColor: UIColor = .white {
-        didSet {
-            selectButton.backgroundColor = menuHeaderBackgroundColor
-        }
+    public required init(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)!
+        
+        selectButton = UIButton(frame: self.frame)
+        itemsTableView = UITableView()
     }
     
     /// Determine Menu row background color
@@ -136,153 +126,195 @@ public class SwiftyMenu: UIView {
     
     /// Determine Menu option text color
     @IBInspectable public var optionColor: UIColor = UIColor(red: 74.0/255.0, green: 74.0/255.0, blue: 74.0/255.0, alpha: 1.0)
-    
-    /// Determine Menu placeholder text color
-    @IBInspectable public var placeHolderColor: UIColor = UIColor(red: 149.0/255.0, green: 149.0/255.0, blue: 149.0/255.0, alpha: 1.0) {
-        didSet {
-            selectButton.setTitleColor(placeHolderColor, for: .normal)
-        }
-    }
-    
-    /// Determine default Menu placeholder text
-    @IBInspectable public var placeHolderText: String? {
-        didSet {
-            UIView.performWithoutAnimation {
-                selectButton.setTitle(placeHolderText, for: .normal)
-                selectButton.layoutIfNeeded()
-            }
-        }
-    }
-    
-    /// Determine arrow image for Menu item
-    @IBInspectable public var arrow: UIImage? {
-        didSet {
-            selectButton.setImage(arrow, for: .normal)
-        }
-    }
-    
-    /// Determine title left inset for Menu item
-    @IBInspectable public var titleLeftInset: Int = 0 {
-        didSet {
-            selectButton.titleEdgeInsets.left = CGFloat(titleLeftInset)
-        }
-    }
-    
-    /// Determine border color for Menu item
-    @IBInspectable public var borderColor: UIColor =  UIColor.clear {
-        didSet {
-            layer.borderColor = borderColor.cgColor
-        }
-    }
-    
-    /// Determine menu height
-    @IBInspectable public var listHeight: Int = 0
-    
-    /// Determine border color for Menu
-    @IBInspectable public var borderWidth: CGFloat = 0.0 {
-        didSet {
-            layer.borderWidth = borderWidth
-        }
-    }
-    
-    /// Determine corner radius for Menu
-    @IBInspectable public var cornerRadius: CGFloat = 8.0 {
-        didSet {
-            layer.cornerRadius = cornerRadius
-        }
-    }
-    
-    /// Determine expanding duration for Menu
-    @IBInspectable public var expandingDuration: Double = 0.5
-    
-    /// Determine collapsing duration for Menu
-    @IBInspectable public var collapsingDuration: Double = 0.5
-    
-    /// Determine expanding delay for Menu
-    @IBInspectable public var expandingDelay: Double = 0.0
-    
-    /// Determine collapsing delay for Menu
-    @IBInspectable public var collapsingDelay: Double = 0.0
-    
-    /// Determine expanding animation style for Menu
-    public var expandingAnimationStyle: AnimationStyle = .linear
-    
-    /// Determine collapsing animation style for Menu
-    public var collapsingAnimationStyle: AnimationStyle = .linear
-    
-    // MARK: - Init
-    
-    public override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupUI()
-    }
-    
-    public required init(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)!
-        setupUI()
-    }
+    // MARK: - LifeCycle
     
     public override func layoutSubviews() {
         super.layoutSubviews()
         
-        setupArrowImage()
+        if !setuped {
+            setupUI()
+            setupArrowImage()
+            setuped = true
+        }
     }
     
+    // MARK: - Public Funcitons
+
+    /// Configure `SwiftyMenu` with attributes.
+    public func configure(with attributes: SwiftyMenuAttributes) {
+        self.attributes = attributes
+    }
+    
+    /// Expand or Collapse `SwiftyMenu` from Code.
+    public func toggle() {
+        handleMenuState()
+    }
+    
+}
+
+// MARK: - UITableViewDataSource Functions
+
+extension SwiftyMenu: UITableViewDataSource {
+    public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return items.count
+    }
+    
+    public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+
+        let cell = tableView.dequeueReusableCell(withIdentifier: "OptionCell", for: indexPath)
+        cell.textLabel?.text = items[indexPath.row].displayableValue
+        cell.textLabel?.textColor = attributes.textStyle.textStyleValues.color
+        cell.textLabel?.font = attributes.textStyle.textStyleValues.font
+        cell.tintColor = attributes.textStyle.textStyleValues.color
+        cell.backgroundColor = attributes.rowStyle.rowStyleValues.backgroundColor
+        cell.selectionStyle = .none
+
+        if attributes.multiSelect.isEnabled {
+            if selectedIndecis[indexPath.row] != nil {
+                cell.accessoryType = attributes.accessory.isEnabled ? .checkmark : .none
+                cell.backgroundColor = attributes.rowStyle.rowStyleValues.selectedColor
+            } else {
+                cell.accessoryType = .none
+            }
+        } else {
+            if indexPath.row == selectedIndex {
+                cell.accessoryType = attributes.accessory.isEnabled ? .checkmark : .none
+                cell.backgroundColor = attributes.rowStyle.rowStyleValues.selectedColor
+            } else {
+                cell.accessoryType = .none
+            }
+        }
+
+        return cell
+    }
+}
+
+// MARK: - UITableViewDelegate Functions
+
+extension SwiftyMenu: UITableViewDelegate {
+    public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return CGFloat(attributes.rowStyle.rowStyleValues.height)
+    }
+    
+    public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+
+        if attributes.multiSelect.isEnabled {
+            if selectedIndecis[indexPath.row] != nil {
+                selectedIndecis[indexPath.row] = nil
+                setSelectedOptionsAsTitle()
+                tableView.reloadData()
+                if attributes.hideOptionsWhenSelect.isEnabled {
+                    handleMenuState()
+                }
+            } else {
+                selectedIndecis[indexPath.row] = indexPath.row
+                setSelectedOptionsAsTitle()
+                let selectedText = self.items[selectedIndecis[indexPath.row]!]
+                delegate?.swiftyMenu(self, didSelectItem: selectedText, atIndex: indexPath.row)
+                self.didSelectItem(self, selectedText, indexPath.row)
+                tableView.reloadData()
+                if attributes.hideOptionsWhenSelect.isEnabled {
+                    handleMenuState()
+                }
+            }
+        } else {
+            if selectedIndex == indexPath.row {
+                if attributes.hideOptionsWhenSelect.isEnabled {
+                    handleMenuState()
+                }
+            } else {
+                selectedIndex = indexPath.row
+                setSelectedOptionsAsTitle()
+                let selectedText = self.items[self.selectedIndex!]
+                delegate?.swiftyMenu(self, didSelectItem: selectedText, atIndex: indexPath.row)
+                self.didSelectItem(self, selectedText, indexPath.row)
+                tableView.reloadData()
+                if attributes.hideOptionsWhenSelect.isEnabled {
+                    handleMenuState()
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Setup SwiftyMenu Views Functions
+
+extension SwiftyMenu {
     private func setupUI () {
         setupView()
         getViewWidth()
         getViewHeight()
         setupSelectButton()
         setupDataTableView()
+        setupSeparatorStyle()
+    }
+
+    public func setupSeparatorStyle() {
+        itemsTableView.separatorStyle = attributes.separatorStyle.separatorStyleValues.style
+        if attributes.separatorStyle.separatorStyleValues.isBlured {
+            itemsTableView.separatorEffect = UIBlurEffect()
+        }
+        itemsTableView.separatorColor = attributes.separatorStyle.separatorStyleValues.color
     }
     
     private func setupArrowImage() {
         let spacing = self.selectButton.frame.width - 20 // the amount of spacing to appear between image and title
-        selectButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: CGFloat(spacing), bottom: 0, right: 0)
+        var imageEdgeInsets = UIEdgeInsets(top: 0, left: CGFloat(spacing), bottom: 0, right: 0)
+        if UIView.userInterfaceLayoutDirection(for: selectButton.semanticContentAttribute) == .rightToLeft {
+            imageEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: CGFloat(spacing))
+        }
+        selectButton.imageEdgeInsets = imageEdgeInsets
     }
     
     private func setupView() {
         clipsToBounds = true
-        layer.cornerRadius = cornerRadius
-        layer.borderWidth = borderWidth
-        layer.borderColor = borderColor.cgColor
-    }
-    
-    private func getViewWidth() {
-        width = self.frame.width
-    }
-    
-    private func getViewHeight() {
-        height = self.frame.height
+        layer.cornerRadius = attributes.roundCorners.cornerValue ?? 0
+        layer.borderWidth = attributes.border.borderValues?.width ?? 0
+        layer.borderColor = attributes.border.borderValues?.color.cgColor
     }
     
     private func setupSelectButton() {
-        selectButton = UIButton(frame: self.frame)
         self.addSubview(selectButton)
         
         selectButton.snp.makeConstraints { maker in
             maker.leading.trailing.top.equalTo(self)
             maker.height.equalTo(height)
         }
-        
-        let color = placeHolderColor
+
+        let color = attributes.placeHolderStyle.placeHolderValues.textColor
         selectButton.setTitleColor(color, for: .normal)
         UIView.performWithoutAnimation {
-            selectButton.setTitle(placeHolderText, for: .normal)
+            selectButton.setTitle(attributes.placeHolderStyle.placeHolderValues.text, for: .normal)
             selectButton.layoutIfNeeded()
         }
         selectButton.titleLabel?.lineBreakMode = .byTruncatingTail
         selectButton.titleLabel?.font = UIFont(name: "Gill Sans", size: rowTextSize - 2)
+        selectButton.titleLabel?.font = attributes.textStyle.textStyleValues.font
+
+        selectButton.imageEdgeInsets.right = width - 16
         selectButton.imageEdgeInsets.left = width - 16
-        selectButton.titleEdgeInsets.right = 16
-        selectButton.backgroundColor = menuHeaderBackgroundColor
         
-        let frameworkBundle = Bundle(for: SwiftyMenu.self)
-        let image = UIImage(named: "downArrow", in: frameworkBundle, compatibleWith: nil)
-        arrow = image
-        
-        if arrow == nil {
+        if UIView.userInterfaceLayoutDirection(for: selectButton.semanticContentAttribute) == .rightToLeft {
+            selectButton.titleEdgeInsets.right = 16
+            selectButton.titleEdgeInsets.left = attributes.arrowStyle.arrowStyleValues.isEnabled ? 32 : 16
+            selectButton.titleLabel?.lineBreakMode = .byTruncatingHead
+        } else {
+            selectButton.titleEdgeInsets.right = attributes.arrowStyle.arrowStyleValues.isEnabled ? 32 : 16
             selectButton.titleEdgeInsets.left = 16
+            selectButton.titleLabel?.lineBreakMode = .byTruncatingTail
+        }
+
+        selectButton.backgroundColor = attributes.headerStyle.headerStyleValues.backgroundColor
+
+        let arrow = attributes.arrowStyle.arrowStyleValues.image
+
+        if attributes.arrowStyle.arrowStyleValues.isEnabled {
+            if UIView.userInterfaceLayoutDirection(for: selectButton.semanticContentAttribute) == .rightToLeft {
+                selectButton.titleEdgeInsets.right = 4
+            } else {
+                selectButton.titleEdgeInsets.left = 4
+            }
+            selectButton.setImage(arrow, for: .normal)
         }
         
         if #available(iOS 11.0, *) {
@@ -295,41 +327,40 @@ public class SwiftyMenu: UIView {
     }
     
     private func setupDataTableView() {
-        optionsTableView = UITableView()
-        self.addSubview(optionsTableView)
+        self.addSubview(itemsTableView)
         
-        optionsTableView.snp.makeConstraints { maker in
+        itemsTableView.snp.makeConstraints { maker in
             maker.leading.trailing.bottom.equalTo(self)
-            maker.top.equalTo(selectButton.snp_bottom)
+            maker.top.equalTo(selectButton.snp.bottom)
         }
         
-        optionsTableView.delegate = self
-        optionsTableView.dataSource = self
-        optionsTableView.rowHeight = CGFloat(rowHeight)
-        optionsTableView.separatorInset.left = 8
-        optionsTableView.separatorInset.right = 8
-        optionsTableView.backgroundColor = rowBackgroundColor
-        optionsTableView.isScrollEnabled = scrollingEnabled
-        optionsTableView.register(UITableViewCell.self, forCellReuseIdentifier: "OptionCell")
+        itemsTableView.delegate = self
+        itemsTableView.dataSource = self
+        itemsTableView.rowHeight = CGFloat(attributes.rowStyle.rowStyleValues.height)
+        itemsTableView.separatorInset.left = 8
+        itemsTableView.separatorInset.right = 8
+        itemsTableView.backgroundColor = attributes.rowStyle.rowStyleValues.backgroundColor
+        itemsTableView.isScrollEnabled = attributes.scroll.isEnabled
+        itemsTableView.register(UITableViewCell.self, forCellReuseIdentifier: "OptionCell")
+        itemsTableView.showsVerticalScrollIndicator = false
     }
     
     @objc private func handleMenuState() {
         switch self.state {
         case .shown:
-            collapseMenu()
+            collapseSwiftyMenu()
         case .hidden:
-            expandMenu()
+            expandSwiftyMenu()
         }
+        state.toggle()
     }
-    
 }
 
-// MARK: - UITableViewDataSource
+// MARK: - Private Functions
 
-extension SwiftyMenu: UITableViewDataSource {
-    
-    public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return options.count
+extension SwiftyMenu {
+    private func getViewWidth() {
+        width = self.frame.width
     }
     
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -369,39 +400,41 @@ extension SwiftyMenu: UITableViewDataSource {
 extension SwiftyMenu: UITableViewDelegate {
     public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return UITableView.automaticDimension
+    private func getViewHeight() {
+        height = self.frame.height
     }
     
-    fileprivate func setMultiSelectedOptions() {
+    private func setMultiSelectedOptions() {
         let titles = selectedIndecis.mapValues { (index) -> String in
-            return options[index].displayableValue
+            return items[index].displayableValue
         }
         var selectedTitle = ""
-        selectedTitle = titles.values.joined(separator: ", ")
+        selectedTitle = titles.values.joined(separator: separatorCharacters ?? ", ")
         UIView.performWithoutAnimation {
             selectButton.setTitle(selectedTitle, for: .normal)
             selectButton.layoutIfNeeded()
         }
-        selectButton.setTitleColor(optionColor, for: .normal)
+        selectButton.setTitleColor(attributes.textStyle.textStyleValues.color, for: .normal)
     }
     
-    fileprivate func setSingleSelectedOption() {
+    private func setSingleSelectedOption() {
         UIView.performWithoutAnimation {
-            selectButton.setTitle(options[selectedIndex!].displayableValue, for: .normal)
+            selectButton.setTitle(items[selectedIndex!].displayableValue, for: .normal)
             selectButton.layoutIfNeeded()
         }
-        selectButton.setTitleColor(optionColor, for: .normal)
+        selectButton.setTitleColor(attributes.textStyle.textStyleValues.color, for: .normal)
     }
     
-    fileprivate func setPlaceholder() {
+    private func setPlaceholder() {
         UIView.performWithoutAnimation {
-            selectButton.setTitle(placeHolderText, for: .normal)
+            selectButton.setTitle(attributes.placeHolderStyle.placeHolderValues.text, for: .normal)
             selectButton.layoutIfNeeded()
         }
-        selectButton.setTitleColor(placeHolderColor, for: .normal)
+        selectButton.setTitleColor(attributes.placeHolderStyle.placeHolderValues.textColor, for: .normal)
     }
     
     private func setSelectedOptionsAsTitle() {
-        if isMultiSelect {
+        if attributes.multiSelect.isEnabled {
             if selectedIndecis.isEmpty {
                 setPlaceholder()
             } else {
@@ -415,61 +448,21 @@ extension SwiftyMenu: UITableViewDelegate {
             }
         }
     }
-    
-    public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-
-        if isMultiSelect {
-            if selectedIndecis[indexPath.row] != nil {
-                selectedIndecis[indexPath.row] = nil
-                setSelectedOptionsAsTitle()
-                tableView.reloadData()
-                if hideOptionsWhenSelect {
-                    collapseMenu()
-                }
-            } else {
-                selectedIndecis[indexPath.row] = indexPath.row
-                setSelectedOptionsAsTitle()
-                let selectedText = self.options[selectedIndecis[indexPath.row]!]
-                delegate?.didSelectOption(self, selectedText, indexPath.row)
-                self.didSelectOption((self, selectedText, indexPath.row))
-                tableView.reloadData()
-                if hideOptionsWhenSelect {
-                    collapseMenu()
-                }
-            }
-        } else {
-            if selectedIndex == indexPath.row {
-                if hideOptionsWhenSelect {
-                    collapseMenu()
-                }
-            } else {
-                selectedIndex = indexPath.row
-                setSelectedOptionsAsTitle()
-                let selectedText = self.options[self.selectedIndex!]
-                delegate?.didSelectOption(self, selectedText, indexPath.row)
-                self.didSelectOption((self, selectedText, indexPath.row))
-                tableView.reloadData()
-                if hideOptionsWhenSelect {
-                    collapseMenu()
-                }
-            }
-        }
-    }
 }
 
-// MARK: - Private Functions
+// MARK: - SwiftyMenu Expand and Collapse Functions
 
 extension SwiftyMenu {
-    private func expandMenu() {
-        delegate?.swiftyMenuWillAppear(self)
+    /// Called to Expand `SwiftyMenu`.
+    private func expandSwiftyMenu() {
+        delegate?.swiftyMenu(willExpand: self)
         self.willExpand()
-        self.state = .shown
-        heightConstraint.constant = listHeight == 0 || !scrollingEnabled ? CGFloat(rowHeight * Double(options.count + 1)) : CGFloat(listHeight)
-        
-        switch expandingAnimationStyle {
+        heightConstraint.constant = attributes.height.listHeightValue == 0 || !attributes.scroll.isEnabled || (CGFloat(Double(attributes.rowStyle.rowStyleValues.height) * Double(items.count + 1)) < CGFloat(attributes.height.listHeightValue)) ? CGFloat(Double(attributes.rowStyle.rowStyleValues.height) * Double(items.count + 1)) : CGFloat(attributes.height.listHeightValue)
+
+        switch attributes.expandingAnimation {
         case .linear:
-            UIView.animate(withDuration: expandingDuration,
-                           delay: expandingDelay,
+            UIView.animate(withDuration: attributes.expandingTiming.animationTimingValues.duration,
+                           delay: attributes.expandingTiming.animationTimingValues.delay,
                            animations: animationBlock,
                            completion: expandingAnimationCompletionBlock)
             
@@ -477,8 +470,8 @@ extension SwiftyMenu {
             let damping = CGFloat(0.5 / powerLevel.rawValue)
             let initialVelocity = CGFloat(0.5 * powerLevel.rawValue)
             
-            UIView.animate(withDuration: expandingDuration,
-                           delay: expandingDelay,
+            UIView.animate(withDuration: attributes.expandingTiming.animationTimingValues.duration,
+                           delay: attributes.expandingTiming.animationTimingValues.delay,
                            usingSpringWithDamping: damping,
                            initialSpringVelocity: initialVelocity,
                            options: [],
@@ -487,16 +480,16 @@ extension SwiftyMenu {
         }
     }
     
-    private func collapseMenu() {
-        delegate?.swiftyMenuWillDisappear(self)
+    /// Called to Collapse `SwiftyMenu`.
+    private func collapseSwiftyMenu() {
+        delegate?.swiftyMenu(willCollapse: self)
         self.willCollapse()
-        self.state = .hidden
-        heightConstraint.constant = CGFloat(rowHeight)
+        heightConstraint.constant = CGFloat(attributes.headerStyle.headerStyleValues.height)
         
-        switch collapsingAnimationStyle {
+        switch attributes.collapsingAnimation {
         case .linear:
-            UIView.animate(withDuration: collapsingDuration,
-                           delay: collapsingDelay,
+            UIView.animate(withDuration: attributes.collapsingTiming.animationTimingValues.duration,
+                           delay: attributes.collapsingTiming.animationTimingValues.delay,
                            animations: animationBlock,
                            completion: collapsingAnimationCompletionBlock)
             
@@ -504,47 +497,37 @@ extension SwiftyMenu {
             let damping = CGFloat(1.0 * powerLevel.rawValue)
             let initialVelocity = CGFloat(10.0 * powerLevel.rawValue)
             
-            UIView.animate(withDuration: collapsingDuration,
-                           delay: collapsingDelay,
+            UIView.animate(withDuration: attributes.collapsingTiming.animationTimingValues.duration,
+                           delay: attributes.collapsingTiming.animationTimingValues.delay,
                            usingSpringWithDamping: damping,
                            initialSpringVelocity: initialVelocity,
                            options: .curveEaseIn,
                            animations: animationBlock,
                            completion: collapsingAnimationCompletionBlock)
         }
-        updateHeightConstraint()
     }
 }
 
-// MARK: - Delegates
+// MARK: - SwiftyMenu Animation Functions
 
 extension SwiftyMenu {
-    public func updateConstraints(completion: @escaping () -> ()) {
-        updateHeightConstraint = completion
-    }
-    
-    public func didSelectOption(completion: @escaping (_ selected: SwiftyMenuDisplayable, _ index: Int) -> ()) {
-        didSelectCompletion = completion
-    }
-    
-    public func menuWillAppear(completion: @escaping () -> ()) {
-        TableWillAppearCompletion = completion
-    }
-    
     private func animationBlock() {
-        self.parentViewController.view.layoutIfNeeded()
+        if attributes.arrowStyle.arrowStyleValues.isEnabled {
+            self.selectButton.imageView?.transform = self.selectButton.imageView!.transform.rotated(by: CGFloat.pi)
+        }
+        self.parentViewController?.view.layoutIfNeeded()
     }
     
     private func expandingAnimationCompletionBlock(didAppeared: Bool) {
         if didAppeared {
-            self.delegate?.swiftyMenuDidAppear(self)
+            self.delegate?.swiftyMenu(didExpand: self)
             self.didExpand()
         }
     }
     
     private func collapsingAnimationCompletionBlock(didAppeared: Bool) {
         if didAppeared {
-            self.delegate?.swiftyMenuDidDisappear(self)
+            self.delegate?.swiftyMenu(didCollapse: self)
             self.didCollapse()
         }
     }
