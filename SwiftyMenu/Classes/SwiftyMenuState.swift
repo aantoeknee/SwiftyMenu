@@ -1,5 +1,5 @@
 //
-//  SwiftMenuDisplayable.swift
+//  SwiftyMenuState.swift
 //
 //  Copyright (c) 2019-2020 Karim Ebrahem (https://twitter.com/k_ebrahem_)
 //
@@ -24,11 +24,21 @@
 
 import Foundation
 
-/// `SwiftyMenuDisplayable` is the markable interface to allow custom types to be used with SwiftyMenu.
-public protocol SwiftyMenuDisplayable {
-    /// The value that will be displayed in the menu item
-    var displayableValue: String { get }
+/// Type describing the current state of `SwiftyMenu`.
+public enum SwiftyMenuState {
+    /// `SwiftyMenu` is expanded.
+    case shown
     
-    /// The value that will be returned when select menu item
-    var retrievableValue: Any { get }
+    /// `SwiftyMenu` is collapsed.
+    case hidden
+    
+    /// Change the current state of SwiftyMenu
+    mutating func toggle() {
+        switch self {
+        case .shown:
+            self = .hidden
+        case .hidden:
+            self = .shown
+        }
+    }
 }

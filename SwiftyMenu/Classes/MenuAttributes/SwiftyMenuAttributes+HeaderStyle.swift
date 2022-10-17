@@ -1,7 +1,7 @@
 //
-//  SwiftMenuDisplayable.swift
+//  SwiftyMenuAttributes+HeaderStyle.swift
 //
-//  Copyright (c) 2019-2020 Karim Ebrahem (https://twitter.com/k_ebrahem_)
+//  Copyright (c) 2019-2021 Karim Ebrahem (https://twitter.com/k_ebrahem_)
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -23,12 +23,21 @@
 //
 
 import Foundation
+import UIKit
 
-/// `SwiftyMenuDisplayable` is the markable interface to allow custom types to be used with SwiftyMenu.
-public protocol SwiftyMenuDisplayable {
-    /// The value that will be displayed in the menu item
-    var displayableValue: String { get }
-    
-    /// The value that will be returned when select menu item
-    var retrievableValue: Any { get }
+public extension SwiftyMenuAttributes {
+
+    /** Describes the style for header of the menu */
+    enum HeaderStyle {
+
+        /** Row with background color */
+        case value(backgroundColor: UIColor, height: Int)
+
+        var headerStyleValues: (backgroundColor: UIColor, height: Int) {
+            switch self {
+            case let .value(backgroundColor, height):
+                return (backgroundColor: backgroundColor, height: height)
+            }
+        }
+    }
 }

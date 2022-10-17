@@ -1,7 +1,7 @@
 //
-//  SwiftMenuDisplayable.swift
+//  SwiftyMenuAttributes+ArrowStyle.swift
 //
-//  Copyright (c) 2019-2020 Karim Ebrahem (https://twitter.com/k_ebrahem_)
+//  Copyright (c) 2019-2021 Karim Ebrahem (https://twitter.com/k_ebrahem_)
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -23,12 +23,33 @@
 //
 
 import Foundation
+import UIKit
 
-/// `SwiftyMenuDisplayable` is the markable interface to allow custom types to be used with SwiftyMenu.
-public protocol SwiftyMenuDisplayable {
-    /// The value that will be displayed in the menu item
-    var displayableValue: String { get }
-    
-    /// The value that will be returned when select menu item
-    var retrievableValue: Any { get }
+public extension SwiftyMenuAttributes {
+
+    /** Describes the style for row of the menu */
+    enum ArrowStyle {
+
+        case `default`
+
+        case value(isEnabled: Bool, image: UIImage? = nil)
+
+        var arrowStyleValues: (isEnabled: Bool, image: UIImage?) {
+            let frameworkBundle = Bundle(for: SwiftyMenu.self)
+            let defaultImage = UIImage(named: "downArrow", in: frameworkBundle, compatibleWith: nil)!
+
+            switch self {
+            case let .value(isEnabled, image):
+                if isEnabled && image != nil {
+                    return (isEnabled: isEnabled, image: image)
+                } else if isEnabled {
+                    return (isEnabled: isEnabled, image: defaultImage)
+                } else {
+                    return (isEnabled: isEnabled, image: nil)
+                }
+            case .default:
+                return (isEnabled: true, image: defaultImage)
+            }
+        }
+    }
 }

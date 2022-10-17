@@ -1,7 +1,7 @@
 //
-//  SwiftMenuDisplayable.swift
+//  SwiftyMenuAttributes+TextStyle.swift
 //
-//  Copyright (c) 2019-2020 Karim Ebrahem (https://twitter.com/k_ebrahem_)
+//  Copyright (c) 2019-2021 Karim Ebrahem (https://twitter.com/k_ebrahem_)
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to deal
@@ -23,12 +23,24 @@
 //
 
 import Foundation
+import UIKit
 
-/// `SwiftyMenuDisplayable` is the markable interface to allow custom types to be used with SwiftyMenu.
-public protocol SwiftyMenuDisplayable {
-    /// The value that will be displayed in the menu item
-    var displayableValue: String { get }
-    
-    /// The value that will be returned when select menu item
-    var retrievableValue: Any { get }
+public extension SwiftyMenuAttributes {
+
+    /** Describes the style for separator of the menu */
+    enum TextStyle {
+
+        case `default`
+
+        case value(color: UIColor, separator: String, font: UIFont?)
+
+        var textStyleValues: (color: UIColor, separator: String, font: UIFont?) {
+            switch self {
+            case let .value(color, separator, font):
+                return (color: color, separator: separator, font: font)
+            case .default:
+                return (color: .black, separator: ", ", font: .systemFont(ofSize: 12))
+            }
+        }
+    }
 }
